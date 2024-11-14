@@ -34,6 +34,7 @@ commandUIState = CommandUiState(CMD_NAME)
 actualDimensionsTableUiState = CommandUiState(CMD_NAME)
 actualCompartmentDimensionsUiState = CommandUiState(CMD_NAME)
 commandCompartmentsTableUIState: list[CommandUiState] = []
+showPreviewManualState = False
 
 # Specify that the command will be promoted to the panel.
 IS_PROMOTED = True
@@ -670,7 +671,7 @@ def command_created(args: adsk.core.CommandCreatedEventArgs):
     commandUIState.registerCommandInput(userChangesGroup)
     showPreviewCheckboxInput =  previewGroup.children.addBoolValueInput(SHOW_PREVIEW_INPUT, 'Show auto update preview (slow)', True, '', False)
     commandUIState.registerCommandInput(showPreviewCheckboxInput)
-    showPreviewManual = previewGroup.children.addBoolValueInput(SHOW_PREVIEW_MANUAL_INPUT, 'Update preview once', False, '', False)
+    showPreviewManual = previewGroup.children.addBoolValueInput(SHOW_PREVIEW_MANUAL_INPUT, 'Update preview once', False, '', showPreviewManualState)
     showPreviewManual.isFullWidth = True
     commandUIState.registerCommandInput(showPreviewManual)
 
@@ -692,13 +693,19 @@ def command_execute(args: adsk.core.CommandEventArgs):
 # This event handler is called when the command needs to compute a new preview in the graphics window.
 def command_preview(args: adsk.core.CommandEventArgs):
     futil.log(f'{CMD_NAME} Command Preview Event')
+    global showPreviewManualState
     inputs = args.command.commandInputs
     if is_all_input_valid(inputs):
         showPreview: adsk.core.BoolValueCommandInput = inputs.itemById(SHOW_PREVIEW_INPUT)
         showPreviewManual: adsk.core.BoolValueCommandInput = inputs.itemById(SHOW_PREVIEW_MANUAL_INPUT)
-        if showPreview.value or showPreviewManual.value:
+        if showPreview.value or (showPreviewManual.value != showPreviewManualState):
+            if showPreview.value:
+                futil.log(f'{CMD_NAME} Command Preview Event - generating preview because showPreview.value is {showPreview.value}')
+            if showPreviewManual.value != showPreviewManualState:
+                futil.log(f'{CMD_NAME} Command Preview Event - generating preview because showPreviewManual.value is {showPreviewManual.value}')
+
             args.isValidResult = generateBin(args)
-            showPreviewManual.value = False
+            showPreviewManualState = showPreviewManual.value
     else:
         args.executeFailed = True
         args.executeFailedMessage = "Some inputs are invalid, unable to generate preview"
