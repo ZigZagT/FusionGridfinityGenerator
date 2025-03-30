@@ -2,7 +2,8 @@ import adsk.core, adsk.fusion, traceback
 
 from . import const
 
-class BinBodyLipGeneratorInput():
+
+class BinBodyLipGeneratorInput:
     def __init__(self):
         self.wallThickness = const.BIN_LIP_WALL_THICKNESS
         self.hasLip = False

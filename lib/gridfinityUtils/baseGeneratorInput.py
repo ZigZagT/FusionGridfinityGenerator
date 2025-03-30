@@ -1,8 +1,14 @@
 import adsk.core, adsk.fusion, traceback
 
-from .const import DIMENSION_MAGNET_CUTOUT_DEPTH, DIMENSION_MAGNET_CUTOUT_DIAMETER, DIMENSION_SCREW_HOLE_DIAMETER, BIN_CORNER_FILLET_RADIUS
+from .const import (
+    DIMENSION_MAGNET_CUTOUT_DEPTH,
+    DIMENSION_MAGNET_CUTOUT_DIAMETER,
+    DIMENSION_SCREW_HOLE_DIAMETER,
+    BIN_CORNER_FILLET_RADIUS,
+)
 
-class BaseGeneratorInput():
+
+class BaseGeneratorInput:
     def __init__(self):
         self.hasMagnetCutouts = False
         self.hasScrewHoles = False

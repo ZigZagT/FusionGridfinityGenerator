@@ -2,7 +2,8 @@ import adsk.core, adsk.fusion, traceback
 
 from . import const
 
-class BinBodyCutoutGeneratorInput():
+
+class BinBodyCutoutGeneratorInput:
     def __init__(self):
         self.hasScoop = False
         self.scoopMaxRadius = const.BIN_SCOOP_MAX_RADIUS
@@ -11,7 +12,6 @@ class BinBodyCutoutGeneratorInput():
         self.tabLength = 1
         self.tabWidth = const.BIN_TAB_WIDTH
         self.hasBottomFillet = True
-
 
     @property
     def width(self) -> float:
@@ -116,5 +116,3 @@ class BinBodyCutoutGeneratorInput():
     @tabOverhangAngle.setter
     def tabOverhangAngle(self, value: float):
         self._tabOverhangAngle = value
-
-    

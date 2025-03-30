@@ -2,8 +2,11 @@ import adsk.core, adsk.fusion, traceback
 
 from . import const
 
-class BinBodyCompartmentDefinition():
-    def __init__(self, positionX=0, positionY=0, width=1, length=1, depth=9999999999999):
+
+class BinBodyCompartmentDefinition:
+    def __init__(
+        self, positionX=0, positionY=0, width=1, length=1, depth=9999999999999
+    ):
         self.positionX = positionX
         self.positionY = positionY
         self.width = width
@@ -51,7 +54,8 @@ class BinBodyCompartmentDefinition():
     def depth(self, value: float):
         self._depth = value
 
-class BinBodyGeneratorInput():
+
+class BinBodyGeneratorInput:
     def __init__(self):
         self.wallThickness = const.BIN_WALL_THICKNESS
         self.isSolid = False

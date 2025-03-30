@@ -2,7 +2,8 @@ import adsk.core, adsk.fusion, traceback
 
 from . import const
 
-class BaseplateGeneratorInput():
+
+class BaseplateGeneratorInput:
     def __init__(self):
         self.hasMagnetCutouts = False
         self.hasScrewHoles = False
@@ -14,7 +15,9 @@ class BaseplateGeneratorInput():
         self.bottomExtensionHeight = const.BASEPLATE_EXTRA_HEIGHT
         self.xyClearance = const.BIN_XY_CLEARANCE
         self.binZClearance = const.BASEPLATE_BIN_Z_CLEARANCE
-        self.connectionScrewHolesDiameter = const.DIMENSION_PLATE_CONNECTION_SCREW_HOLE_DIAMETER
+        self.connectionScrewHolesDiameter = (
+            const.DIMENSION_PLATE_CONNECTION_SCREW_HOLE_DIAMETER
+        )
         self.cornerFilletRadius = const.BIN_CORNER_FILLET_RADIUS
 
     @property

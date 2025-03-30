@@ -1,6 +1,7 @@
 import adsk.core, adsk.fusion, traceback
 from ...lib import fusion360utils as futil
 
+
 class SingleInputState:
     def __init__(self, inputId: str, inputValue: any, inputType: str):
         self.id = inputId
@@ -9,10 +10,11 @@ class SingleInputState:
 
     def toDict(self):
         return {
-            'id': self.id,
-            'value': self.value,
-            'type': self.type,
+            "id": self.id,
+            "value": self.value,
+            "type": self.type,
         }
+
 
 class CommandUiState:
     def __init__(self, commandName):
@@ -37,49 +39,70 @@ class CommandUiState:
 
     def initValues(self, inputValues: dict[str, any]):
         for v in inputValues.values():
-            self.inputState[v['id']] = SingleInputState(v['id'], v['value'], v['type'])
+            self.inputState[v["id"]] = SingleInputState(v["id"], v["value"], v["type"])
 
     def registerCommandInput(self, input: adsk.core.CommandInput):
-        futil.log(f'{self.commandName} Registering command input {input.id}')
+        futil.log(f"{self.commandName} Registering command input {input.id}")
         self.commandInputs[input.id] = input
 
     def onInputUpdate(self, input: adsk.core.CommandInput):
         inputId = input.id
         self.commandInputs[inputId] = input
         if isinstance(input, adsk.core.IntegerSpinnerCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.value, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.value, input.objectType
+            )
         elif isinstance(input, adsk.core.ValueCommandInput):
-            if input.unitType == 'deg':
-                self.inputState[inputId] = SingleInputState(inputId, input.expression, input.objectType)
+            if input.unitType == "deg":
+                self.inputState[inputId] = SingleInputState(
+                    inputId, input.expression, input.objectType
+                )
             else:
-                self.inputState[inputId] = SingleInputState(inputId, input.value, input.objectType)
+                self.inputState[inputId] = SingleInputState(
+                    inputId, input.value, input.objectType
+                )
         elif isinstance(input, adsk.core.DropDownCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.selectedItem.name, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.selectedItem.name, input.objectType
+            )
         elif isinstance(input, adsk.core.GroupCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.isExpanded, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.isExpanded, input.objectType
+            )
         elif isinstance(input, adsk.core.BoolValueCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.value, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.value, input.objectType
+            )
         elif isinstance(input, adsk.core.TextBoxCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.formattedText, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.formattedText, input.objectType
+            )
         elif isinstance(input, adsk.core.StringValueCommandInput):
-            self.inputState[inputId] = SingleInputState(inputId, input.value, input.objectType)
+            self.inputState[inputId] = SingleInputState(
+                inputId, input.value, input.objectType
+            )
         else:
-            futil.log(f'{self.commandName} Unknonwn input type: {input.id} [{input.objectType}]')
+            futil.log(
+                f"{self.commandName} Unknonwn input type: {input.id} [{input.objectType}]"
+            )
 
     def forceUIRefresh(self):
-        futil.log(f'{self.commandName} Forcing UI input state refresh')
+        futil.log(f"{self.commandName} Forcing UI input state refresh")
         for input in self.inputState.values():
             if input.id in self.commandInputs:
                 commandInput = self.commandInputs[input.id]
-                futil.log(f'{self.commandName} Input {input.id}, {commandInput}')
+                futil.log(f"{self.commandName} Input {input.id}, {commandInput}")
                 try:
                     self.updateInputFromState(commandInput)
                 except Exception as err:
-                    futil.log(f'{self.commandName} Skipping {input.id} due to error: {err}')
+                    futil.log(
+                        f"{self.commandName} Skipping {input.id} due to error: {err}"
+                    )
 
             else:
-                futil.log(f'{self.commandName} Skipping {input.id} as it wasn\'t registered')
-
+                futil.log(
+                    f"{self.commandName} Skipping {input.id} as it wasn't registered"
+                )
 
     def updateInputFromState(self, input: adsk.core.CommandInput):
         inputId = input.id
@@ -93,7 +116,9 @@ class CommandUiState:
                 input.value = value
         elif isinstance(input, adsk.core.DropDownCommandInput):
             for i in range(0, input.listItems.count):
-                input.listItems.item(i).isSelected = input.listItems.item(i).name == value
+                input.listItems.item(i).isSelected = (
+                    input.listItems.item(i).name == value
+                )
         elif isinstance(input, adsk.core.GroupCommandInput):
             input.isExpanded = value
         elif isinstance(input, adsk.core.BoolValueCommandInput):
@@ -103,14 +128,16 @@ class CommandUiState:
         elif isinstance(input, adsk.core.StringValueCommandInput):
             input.value = value
         else:
-            futil.log(f'{self.commandName} Unknown input type: {input.id} [{input.objectType}]')
+            futil.log(
+                f"{self.commandName} Unknown input type: {input.id} [{input.objectType}]"
+            )
 
     def getState(self, inputId: str):
         return self.inputState[inputId].value
 
     def getInput(self, inputId: str):
         return self.commandInputs[inputId]
-    
+
     def toDict(self, ignoreKeys: list[str] = []):
         result = {}
         for key in self.inputState.keys():

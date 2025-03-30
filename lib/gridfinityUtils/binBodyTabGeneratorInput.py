@@ -2,7 +2,8 @@ import adsk.core, adsk.fusion, traceback
 
 from . import const
 
-class BinBodyTabGeneratorInput():
+
+class BinBodyTabGeneratorInput:
     def __init__(self):
         self.overhangAngle = const.BIN_TAB_OVERHANG_ANGLE
         self.labelAngle = const.BIN_TAB_LABEL_ANGLE
@@ -55,5 +56,3 @@ class BinBodyTabGeneratorInput():
     @labelAngle.setter
     def labelAngle(self, value: float):
         self._tablabelAngle = value
-
-    

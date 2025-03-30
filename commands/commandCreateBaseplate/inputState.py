@@ -1,6 +1,7 @@
 from typing import Dict
 from dataclasses import dataclass
 
+
 @dataclass
 class InputState:
     baseWidth: float

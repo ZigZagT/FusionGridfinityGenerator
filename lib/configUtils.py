@@ -4,12 +4,14 @@ import configparser
 import os
 import json
 
-CONFIG_FILE_NAME = 'config.ini'
+CONFIG_FILE_NAME = "config.ini"
+
 
 def getDefaultConfig():
     config = configparser.ConfigParser()
-    config['UI'] = {'IS_PROMOTED': 'yes'}
+    config["UI"] = {"IS_PROMOTED": "yes"}
     return config
+
 
 def readConfig(path: str):
     CONFIG_FILE_PATH = os.path.join(path, CONFIG_FILE_NAME)
@@ -22,16 +24,18 @@ def readConfig(path: str):
     except:
         return getDefaultConfig()
 
+
 def writeConfig(config: configparser.ConfigParser, path: str):
     try:
         CONFIG_FILE_PATH = os.path.join(path, CONFIG_FILE_NAME)
         if not os.path.exists(path):
             os.mkdir(path)
-        with open(CONFIG_FILE_PATH, 'w') as configfile:
+        with open(CONFIG_FILE_PATH, "w") as configfile:
             config.write(configfile)
         return True
     except:
         return False
+
 
 def deleteConfigFile(path: str):
     try:
@@ -39,7 +43,7 @@ def deleteConfigFile(path: str):
             os.remove(path)
             return True
     except:
-        futil.log(f'Couldn\'t delete config file from {path}')
+        futil.log(f"Couldn't delete config file from {path}")
         return None
 
 
@@ -49,20 +53,21 @@ def readJsonConfig(path: str):
             with open(path) as configFile:
                 return json.load(configFile)
     except:
-        futil.log(f'Couldn\'t load config file from {path}')
+        futil.log(f"Couldn't load config file from {path}")
         return None
-    
+
+
 def dumpJsonConfig(path: str, config: any):
     try:
-        futil.log(f'Writing config to path {os.path.dirname(path)}')
+        futil.log(f"Writing config to path {os.path.dirname(path)}")
         if os.path.exists(os.path.dirname(path)):
-            with open(path, 'w+') as configFile:
+            with open(path, "w+") as configFile:
                 json.dump(config, configFile, indent=True)
                 return True
         else:
-            futil.log(f'Config folder doesn\'t exist {os.path.dirname(path)}')
+            futil.log(f"Config folder doesn't exist {os.path.dirname(path)}")
             return False
-        
+
     except Exception as err:
-        futil.log(f'Couldn\'t write config file to {path}, error: {err}')
+        futil.log(f"Couldn't write config file to {path}, error: {err}")
         return None
