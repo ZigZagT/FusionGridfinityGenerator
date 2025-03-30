@@ -1770,7 +1770,7 @@ def generateBin(args: adsk.core.CommandEventArgs):
                 topFace = faceUtils.maxByArea(horizontalFaces)
                 shellUtils.simpleShell(
                     [topFace],
-                    binBodyInput.wallThickness - xyClearance,
+                    binBodyInput.wallThickness,
                     gridfinityBinComponent,
                 )
                 toolBodies = adsk.core.ObjectCollection.create()
