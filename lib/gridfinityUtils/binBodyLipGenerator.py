@@ -76,7 +76,7 @@ def createGridfinityBinBodyLip(
             input.origin,
             byX=-input.xyClearance * 2,
             byY=-input.xyClearance * 2,
-            byZ=const.BIN_BASE_HEIGHT,
+            byZ=lipBodyHeight,
         )
         lipCutoutInput.baseWidth = input.baseWidth + input.xyClearance * 2
         lipCutoutInput.baseLength = input.baseLength + input.xyClearance * 2
@@ -134,7 +134,7 @@ def createGridfinityBinBodyLip(
             input.origin,
             byX=-input.xyClearance * 2,
             byY=-input.xyClearance * 2,
-            byZ=const.BIN_BASE_HEIGHT,
+            byZ=lipBodyHeight,
         )
         lipCutoutInput.baseWidth = (
             input.baseWidth * input.binWidth + input.xyClearance * 2

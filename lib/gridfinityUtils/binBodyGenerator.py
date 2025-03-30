@@ -43,10 +43,7 @@ def createGridfinityBinBody(
 ) -> tuple[adsk.fusion.BRepBody, adsk.fusion.BRepBody]:
     actualBodyWidth = (input.baseWidth * input.binWidth) - input.xyClearance * 2.0
     actualBodyLength = (input.baseLength * input.binLength) - input.xyClearance * 2.0
-    binHeightWithoutBase = input.binHeight - 1
-    binBodyTotalHeight = binHeightWithoutBase * input.heightUnit + max(
-        0, input.heightUnit - const.BIN_BASE_HEIGHT
-    )
+    binBodyTotalHeight = input.binHeight * input.heightUnit - const.BIN_BASE_HEIGHT
     features: adsk.fusion.Features = targetComponent.features
     binBodyExtrude = extrudeUtils.createBox(
         actualBodyWidth,
@@ -71,12 +68,7 @@ def createGridfinityBinBody(
     ).name = "Bin body corner fillets"
 
     if input.hasLip:
-        lipOriginPoint = adsk.core.Point3D.create(
-            0,
-            0,
-            binHeightWithoutBase * input.heightUnit
-            + max(0, input.heightUnit - const.BIN_BASE_HEIGHT),
-        )
+        lipOriginPoint = adsk.core.Point3D.create(0, 0, binBodyTotalHeight)
         lipInput = BinBodyLipGeneratorInput()
         lipInput.baseLength = input.baseLength
         lipInput.baseWidth = input.baseWidth
@@ -89,10 +81,11 @@ def createGridfinityBinBody(
         lipBody = createGridfinityBinBodyLip(lipInput, targetComponent)
 
         if input.wallThickness < const.BIN_LIP_WALL_THICKNESS:
-            lipBottomChamferSize = max(
+            lipBottomChamferHeight = max(
                 const.BIN_BODY_CUTOUT_BOTTOM_FILLET_RADIUS,
                 input.binCornerFilletRadius - input.wallThickness,
             )
+            lipBottomChamferSize = input.wallThickness
             lipBottomChamferExtrude = extrudeUtils.createBoxAtPoint(
                 actualBodyWidth - input.wallThickness * 2,
                 (
@@ -105,7 +98,7 @@ def createGridfinityBinBody(
                     if input.hasScoop
                     else (actualBodyLength - input.wallThickness * 2)
                 ),
-                lipBottomChamferSize,
+                lipBottomChamferHeight,
                 targetComponent,
                 adsk.core.Point3D.create(
                     input.wallThickness,
@@ -118,8 +111,8 @@ def createGridfinityBinBody(
             )
             filletUtils.filletEdgesByLength(
                 lipBottomChamferExtrude.faces,
-                lipBottomChamferSize,
-                lipBottomChamferSize,
+                lipBottomChamferHeight,
+                lipBottomChamferHeight,
                 targetComponent,
             )
             lipBottomChamferExtrudeTopFace = faceUtils.getTopFace(
