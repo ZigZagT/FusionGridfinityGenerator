@@ -199,17 +199,27 @@ def createGridfinityBinBody(
                 )
 
             compartmentTabInput = BinBodyTabGeneratorInput()
-            tabOriginPoint = adsk.core.Point3D.create(
-                compartmentOriginPoint.x
-                + max(0, min(input.tabPosition, input.binWidth - input.tabLength))
-                * input.baseWidth,
-                compartmentOriginPoint.y + compartmentLength,
-                compartmentOriginPoint.z,
-            )
+            if input.tabLength >= 0:
+                tabOriginPoint = adsk.core.Point3D.create(
+                    compartmentOriginPoint.x
+                    + max(0, min(input.tabPosition, input.binWidth - input.tabLength))
+                    * input.baseWidth,
+                    compartmentOriginPoint.y + compartmentLength,
+                    compartmentOriginPoint.z,
+                )
+            else:
+                tabOriginPoint = adsk.core.Point3D.create(
+                    compartmentOriginPoint.x + compartmentWidth
+                    - max(0, min(input.tabPosition, input.binWidth - input.tabLength))
+                    * input.baseWidth,
+                    compartmentOriginPoint.y + compartmentLength,
+                    compartmentOriginPoint.z,
+                )
+
             compartmentTabInput.origin = tabOriginPoint
-            compartmentTabInput.length = (
-                max(0, min(input.tabLength, input.binWidth)) * input.baseWidth
-            )
+            compartmentTabInput.length = math.copysign((
+                max(0, min(abs(input.tabLength), input.binWidth)) * input.baseWidth
+            ), input.tabLength)
             compartmentTabInput.width = input.tabWidth
             compartmentTabInput.overhangAngle = input.tabOverhangAngle
             compartmentTabInput.topClearance = const.BIN_TAB_TOP_CLEARANCE
