@@ -13,4 +13,5 @@ def simpleShell(
         shellBinObjects.add(face)
     shellBinInput = shellFeatures.createInput(shellBinObjects, False)
     shellBinInput.insideThickness = adsk.core.ValueInput.createByReal(thickness)
+    shellBinInput.shellType = adsk.fusion.ShellTypes.RoundedOffsetShellType
     return shellFeatures.add(shellBinInput)

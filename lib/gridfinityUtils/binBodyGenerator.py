@@ -16,6 +16,7 @@ from . import (
     filletUtils,
     geometryUtils,
 )
+from ...lib.gridfinityUtils import shellUtils
 from .binBodyCutoutGenerator import createGridfinityBinBodyCutout
 from .binBodyCutoutGeneratorInput import BinBodyCutoutGeneratorInput
 from .baseGeneratorInput import BaseGeneratorInput
@@ -39,7 +40,9 @@ def uniformCompartments(countX, countY):
 
 
 def createGridfinityBinBody(
-    input: BinBodyGeneratorInput, targetComponent: adsk.fusion.Component
+    input: BinBodyGeneratorInput,
+    targetComponent: adsk.fusion.Component,
+    baseBodies: list[adsk.fusion.BRepBody] = None,
 ) -> tuple[adsk.fusion.BRepBody, adsk.fusion.BRepBody]:
     actualBodyWidth = (input.baseWidth * input.binWidth) - input.xyClearance * 2.0
     actualBodyLength = (input.baseLength * input.binLength) - input.xyClearance * 2.0
@@ -146,7 +149,6 @@ def createGridfinityBinBody(
                 commonUtils.objectCollectionFromList(lipBottomChamferExtrude.bodies),
                 targetComponent,
             )
-
         bodiesToMerge.append(lipBody)
 
     if not input.isSolid:
@@ -187,10 +189,14 @@ def createGridfinityBinBody(
                 compartmentLengthUnit * compartment.length
                 + (compartment.length - 1) * input.wallThickness
             )
-            compartmentDepth = min(
-                binBodyTotalHeight - const.BIN_COMPARTMENT_BOTTOM_THICKNESS,
-                compartment.depth,
-            )
+
+            if input.isShelled:
+                compartmentDepth = input.binHeight * input.heightUnit
+            else:
+                compartmentDepth = min(
+                    binBodyTotalHeight - const.BIN_COMPARTMENT_BOTTOM_THICKNESS,
+                    compartment.depth,
+                )
 
             compartmentTabInput = BinBodyTabGeneratorInput()
             tabOriginPoint = adsk.core.Point3D.create(
@@ -215,6 +221,7 @@ def createGridfinityBinBody(
                 compartmentLength,
                 compartmentDepth,
                 input.binCornerFilletRadius - input.wallThickness,
+                input.isShelled,
                 input.hasScoop,
                 input.scoopMaxRadius,
                 input.hasTab,
@@ -241,12 +248,60 @@ def createGridfinityBinBody(
             )
             bodiesToSubtract.append(compartmentsTopClearance)
 
-    if len(bodiesToSubtract) > 0:
-        combineUtils.cutBody(
-            binBody,
-            commonUtils.objectCollectionFromList(bodiesToSubtract),
+    if input.isShelled:
+        # Create a copy of the bin body for shelled mode
+        binBodyCopy = targetComponent.features.copyPasteBodies.add(binBody)
+        binBodyCopy = binBodyCopy.bodies.item(0)
+        binBodyCopy.name = "Bin body copy"
+
+        if baseBodies is not None:
+            combineUtils.joinBodies(
+                binBodyCopy,
+                commonUtils.objectCollectionFromList(baseBodies),
+                targetComponent,
+                keepToolBodies=True,
+            )
+
+            combineUtils.joinBodies(
+                binBody,
+                commonUtils.objectCollectionFromList(baseBodies),
+                targetComponent,
+            )
+
+        # Shell the original bin body
+        horizontalFaces = [
+            face for face in binBody.faces if geometryUtils.isHorizontal(face)
+        ]
+        topFace = faceUtils.maxByArea(horizontalFaces)
+        shellUtils.simpleShell(
+            [topFace],
+            input.wallThickness,
             targetComponent,
         )
+
+        if len(bodiesToSubtract) > 0:
+            combineUtils.cutBody(
+                binBodyCopy,
+                commonUtils.objectCollectionFromList(bodiesToSubtract),
+                targetComponent,
+            )
+
+        bodiesToMerge.append(binBodyCopy)
+    else:
+        if len(bodiesToSubtract) > 0:
+            combineUtils.cutBody(
+                binBody,
+                commonUtils.objectCollectionFromList(bodiesToSubtract),
+                targetComponent,
+            )
+
+        if baseBodies is not None:
+            combineUtils.joinBodies(
+                binBody,
+                commonUtils.objectCollectionFromList(baseBodies),
+                targetComponent,
+            )
+
     if len(bodiesToMerge) > 0:
         combineUtils.joinBodies(
             binBody,
@@ -292,6 +347,7 @@ def createCompartment(
     length: float,
     depth: float,
     cornerFilletRadius: float,
+    isShelled: bool,
     hasScoop: bool,
     scoopMaxRadius: float,
     hasTab: bool,
@@ -310,7 +366,7 @@ def createCompartment(
         cornerFilletRadius,
         hasScoop,
         scoopMaxRadius,
-        True,
+        not isShelled,
         targetComponent,
     )
     bodiesToSubtract.append(innerCutoutBody)

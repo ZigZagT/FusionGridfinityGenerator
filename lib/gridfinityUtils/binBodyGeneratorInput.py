@@ -59,6 +59,8 @@ class BinBodyGeneratorInput:
     def __init__(self):
         self.wallThickness = const.BIN_WALL_THICKNESS
         self.isSolid = False
+        self.isShelled = False
+        self.isHollow = False
         self.hasLip = False
         self.hasLipNotches = False
         self.hasScoop = False

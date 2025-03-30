@@ -1677,11 +1677,13 @@ def generateBin(args: adsk.core.CommandEventArgs):
         binBodyInput.binCornerFilletRadius = (
             const.BIN_CORNER_FILLET_RADIUS - xyClearance
         )
-        binBodyInput.isSolid = isSolid or isShelled
+        binBodyInput.isSolid = isSolid
+        binBodyInput.isShelled = isShelled
+        binBodyInput.isHollow = isHollow
         binBodyInput.wallThickness = bin_wall_thickness.value
         binBodyInput.hasScoop = has_scoop.value and isHollow
         binBodyInput.scoopMaxRadius = binScoopMaxRadius.value
-        binBodyInput.hasTab = hasTabInput.value and isHollow
+        binBodyInput.hasTab = hasTabInput.value and not isSolid
         binBodyInput.tabLength = binTabLength.value
         binBodyInput.tabWidth = binTabWidth.value
         binBodyInput.tabPosition = binTabPosition.value
@@ -1727,7 +1729,12 @@ def generateBin(args: adsk.core.CommandEventArgs):
         binBody: adsk.fusion.BRepBody
 
         if bin_generate_body.value:
-            binBody = createGridfinityBinBody(binBodyInput, gridfinityBinComponent)
+            binBody = createGridfinityBinBody(
+                binBodyInput,
+                gridfinityBinComponent,
+                baseBodies if bin_generate_base.value else None,
+            )
+
         if bin_generate_body.value or bin_generate_base.value:
             cutBaseClearance(
                 baseGeneratorInput,
@@ -1735,118 +1742,6 @@ def generateBin(args: adsk.core.CommandEventArgs):
                 bin_length.value,
                 gridfinityBinComponent,
             )
-
-        # merge everything
-        if bin_generate_body.value and bin_generate_base.value:
-            toolBodies = commonUtils.objectCollectionFromList(baseBodies)
-            combineFeatures = gridfinityBinComponent.features.combineFeatures
-            combineFeatureInput = combineFeatures.createInput(binBody, toolBodies)
-            combineFeatures.add(combineFeatureInput)
-            gridfinityBinComponent.bRepBodies.item(0).name = binName
-
-        if isShelled and bin_generate_body.value:
-            # face.boundingBox.maxPoint.z ~ face.boundingBox.minPoint.z => face horizontal
-            # largest horizontal face
-            horizontalFaces = [
-                face for face in binBody.faces if geometryUtils.isHorizontal(face)
-            ]
-            topFace = faceUtils.maxByArea(horizontalFaces)
-            topFaceMinPoint = topFace.boundingBox.minPoint
-            if binBodyInput.hasLip:
-                splitBodyFeatures = features.splitBodyFeatures
-                splitBodyInput = splitBodyFeatures.createInput(binBody, topFace, True)
-                splitBodies = splitBodyFeatures.add(splitBodyInput)
-                bottomBody = min(
-                    splitBodies.bodies, key=lambda x: x.boundingBox.minPoint.z
-                )
-                topBody = max(
-                    splitBodies.bodies, key=lambda x: x.boundingBox.minPoint.z
-                )
-                horizontalFaces = [
-                    face
-                    for face in bottomBody.faces
-                    if geometryUtils.isHorizontal(face)
-                ]
-                topFace = faceUtils.maxByArea(horizontalFaces)
-                shellUtils.simpleShell(
-                    [topFace],
-                    binBodyInput.wallThickness,
-                    gridfinityBinComponent,
-                )
-                toolBodies = adsk.core.ObjectCollection.create()
-                toolBodies.add(topBody)
-                combineAfterShellFeatureInput = combineFeatures.createInput(
-                    bottomBody, toolBodies
-                )
-                combineFeatures.add(combineAfterShellFeatureInput)
-                binBody = gridfinityBinComponent.bRepBodies.item(0)
-            else:
-                shellUtils.simpleShell(
-                    [topFace],
-                    binBodyInput.wallThickness - xyClearance,
-                    gridfinityBinComponent,
-                )
-
-            if hasTabInput.value:
-                compartmentTabInput = BinBodyTabGeneratorInput()
-                tabOriginPoint = adsk.core.Point3D.create(
-                    binBodyInput.wallThickness
-                    + max(
-                        0,
-                        min(
-                            binBodyInput.tabPosition,
-                            binBodyInput.binWidth - binBodyInput.tabLength,
-                        ),
-                    )
-                    * binBodyInput.baseWidth,
-                    (
-                        const.BIN_LIP_WALL_THICKNESS
-                        if binBodyInput.hasLip and binBodyInput.hasScoop
-                        else binBodyInput.wallThickness
-                        + binBodyInput.binLength * binBodyInput.baseLength
-                        - binBodyInput.wallThickness
-                        - binBodyInput.xyClearance * 2
-                    ),
-                    (binBodyInput.binHeight - 1) * binBodyInput.heightUnit
-                    + max(0, binBodyInput.heightUnit - const.BIN_BASE_HEIGHT),
-                )
-                compartmentTabInput.origin = tabOriginPoint
-                compartmentTabInput.length = (
-                    max(0, min(binBodyInput.tabLength, binBodyInput.binWidth))
-                    * binBodyInput.baseWidth
-                    - binBodyInput.wallThickness * 2
-                    - binBodyInput.xyClearance * 2
-                )
-                compartmentTabInput.width = binBodyInput.tabWidth
-                compartmentTabInput.overhangAngle = binBodyInput.tabOverhangAngle
-                compartmentTabInput.topClearance = const.BIN_TAB_TOP_CLEARANCE
-                tabBody = createGridfinityBinBodyTab(
-                    compartmentTabInput, gridfinityBinComponent
-                )
-                combineInput = combineFeatures.createInput(
-                    tabBody, commonUtils.objectCollectionFromList([binBody])
-                )
-                combineInput.operation = (
-                    adsk.fusion.FeatureOperations.CutFeatureOperation
-                )
-                combineInput.isKeepToolBodies = True
-                combineFeature = combineFeatures.add(combineInput)
-                tabBodies = [
-                    body
-                    for body in combineFeature.bodies
-                    if body.faces != binBody.faces
-                ]
-                tabMainBody = max(
-                    [body for body in tabBodies], key=lambda x: x.edges.count
-                )
-                bodiesToRemove = [body for body in tabBodies if body is not tabMainBody]
-                for body in bodiesToRemove:
-                    gridfinityBinComponent.features.removeFeatures.add(body)
-                combineUtils.joinBodies(
-                    binBody,
-                    commonUtils.objectCollectionFromList([tabMainBody]),
-                    gridfinityBinComponent,
-                )
 
         # group features in timeline
         binGroup = des.timeline.timelineGroups.add(

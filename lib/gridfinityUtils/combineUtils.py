@@ -34,13 +34,16 @@ def intersectBody(
 
 
 def joinBodies(
-    targetBody: adsk.fusion.BRepBodies,
+    targetBody: adsk.fusion.BRepBody,
     toolBodies: adsk.core.ObjectCollection,
     targetComponent: adsk.fusion.Component,
-):
-    combineInput = targetComponent.features.combineFeatures.createInput(
-        targetBody, toolBodies
+    keepToolBodies: bool = False,
+) -> adsk.fusion.BRepBody:
+    combineFeatures: adsk.fusion.CombineFeatures = (
+        targetComponent.features.combineFeatures
     )
-    combineInput.operation = adsk.fusion.FeatureOperations.JoinFeatureOperation
-    combineFeature = targetComponent.features.combineFeatures.add(combineInput)
-    return combineFeature
+    combineFeatureInput = combineFeatures.createInput(targetBody, toolBodies)
+    combineFeatureInput.operation = adsk.fusion.FeatureOperations.JoinFeatureOperation
+    combineFeatureInput.isKeepToolBodies = keepToolBodies
+    combineFeature = combineFeatures.add(combineFeatureInput)
+    return combineFeature.bodies.item(0)
