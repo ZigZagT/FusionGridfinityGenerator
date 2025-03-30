@@ -54,6 +54,7 @@ def createGridfinityBinBody(
         binBodyTotalHeight,
         targetComponent,
         targetComponent.xYConstructionPlane,
+        "Bin body",
     )
     binBody = binBodyExtrude.bodies.item(0)
     binBody.name = "Bin body"
@@ -113,8 +114,8 @@ def createGridfinityBinBody(
                     else input.wallThickness,
                     lipOriginPoint.z,
                 ),
+                "Lip bottom chamfer",
             )
-            lipBottomChamferExtrude.name = "Lip bottom chamfer extrude"
             filletUtils.filletEdgesByLength(
                 lipBottomChamferExtrude.faces,
                 lipBottomChamferSize,

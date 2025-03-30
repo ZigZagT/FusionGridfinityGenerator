@@ -88,6 +88,7 @@ def simpleBox(
     height: float,
     originPoint: adsk.core.Point3D,
     targetComponent: adsk.fusion.Component,
+    name: str = "",
 ):
     features: adsk.fusion.Features = targetComponent.features
     extrudeFeatures: adsk.fusion.ExtrudeFeatures = features.extrudeFeatures
@@ -98,7 +99,7 @@ def simpleBox(
     boxConstructionPlane = targetComponent.constructionPlanes.add(boxPlaneInput)
     sketches: adsk.fusion.Sketches = targetComponent.sketches
     recSketch: adsk.fusion.Sketch = sketches.add(boxConstructionPlane)
-    recSketch.name = "Simple box sketch"
+    recSketch.name = f"{name} sketch" if name else "Simple box sketch"
     startPointOnSketch = recSketch.modelToSketchSpace(originPoint)
     startPointOnSketch.z = 0
     sketchUtils.createRectangle(width, length, startPointOnSketch, recSketch)
@@ -109,5 +110,5 @@ def simpleBox(
         adsk.core.ValueInput.createByReal(height),
         adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     )
-    extrude.name = "Simple box extrude"
+    extrude.name = f"{name} extrude" if name else "Simple box extrude"
     return extrude.bodies.item(0)

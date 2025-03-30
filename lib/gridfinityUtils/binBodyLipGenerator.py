@@ -47,6 +47,7 @@ def createGridfinityBinBodyLip(
         lipBodyHeight,
         targetComponent,
         input.origin,
+        "Lip body",
     )
     lipBody = lipBodyExtrude.bodies.item(0)
     lipBody.name = "Lip body"
@@ -116,6 +117,7 @@ def createGridfinityBinBodyLip(
             lipBodyHeight,
             targetComponent,
             lipMiddleCutoutOrigin,
+            "Lip middle cutout",
         )
         lipMidCutout.name = "Lip middle cutout"
         filletUtils.filletEdgesByLength(

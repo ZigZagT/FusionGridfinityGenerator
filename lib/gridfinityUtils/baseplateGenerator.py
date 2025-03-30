@@ -308,6 +308,7 @@ def createGridfinityBaseplate(
         -const.BIN_BASE_HEIGHT,
         targetComponent.originConstructionPoint.geometry,
         targetComponent,
+        "binInterfaceBody",
     )
 
     if input.binZClearance > 0:
@@ -323,6 +324,7 @@ def createGridfinityBaseplate(
                 byY=-input.paddingBottom,
             ),
             targetComponent,
+            "Top negative volume",
         )
         binZClearance.name = "Top negative volume"
         cuttingTools.append(binZClearance)
@@ -343,6 +345,7 @@ def createGridfinityBaseplate(
                     byY=-input.paddingBottom,
                 ),
                 targetComponent,
+                "Padding left",
             )
             paddingLeftBody.name = "Padding left"
             mergeTools.append(paddingLeftBody)
@@ -359,6 +362,7 @@ def createGridfinityBaseplate(
                     byY=baseplateTrueLength,
                 ),
                 targetComponent,
+                "Padding top",
             )
             paddingTopBody.name = "Padding top"
             mergeTools.append(paddingTopBody)
@@ -375,6 +379,7 @@ def createGridfinityBaseplate(
                     byY=-input.paddingBottom,
                 ),
                 targetComponent,
+                "Padding right",
             )
             paddingRightBody.name = "Padding right"
             mergeTools.append(paddingRightBody)
@@ -391,6 +396,7 @@ def createGridfinityBaseplate(
                     byY=-input.paddingBottom,
                 ),
                 targetComponent,
+                "Padding bottom",
             )
             paddingBottomBody.name = "Padding bottom"
             mergeTools.append(paddingBottomBody)

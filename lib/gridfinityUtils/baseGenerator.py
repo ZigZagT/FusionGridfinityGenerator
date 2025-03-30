@@ -198,6 +198,7 @@ def createSingleGridfinityBaseBody(
         [baseBody],
         targetComponent,
     )
+    baseBottomExtrude.name = "Base bottom section extrude"
 
     if input.hasBottomChamfer:
         # chamfer bottom section
@@ -295,6 +296,7 @@ def createSingleGridfinityBaseBody(
                     0,
                 ),
                 targetComponent,
+                "Groove layer 1 body",
             )
             grooveLayer1.name = "Groove layer 1 body"
             grooveLayer2 = shapeUtils.simpleBox(
@@ -309,6 +311,7 @@ def createSingleGridfinityBaseBody(
                     0,
                 ),
                 targetComponent,
+                "Groove layer 2 body",
             )
             grooveLayer2.name = "Groove layer 2 body"
             combineUtils.intersectBody(
@@ -441,6 +444,7 @@ def createSingleBaseBodyWithClearance(
             input.originPoint.y - input.xyClearance,
             input.originPoint.z,
         ),
+        "clearance bounding box",
     )
     clearanceBoundingBox.name = "clearance bounding box"
     clearanceBoundingBox.bodies.item(0).name = "clearance bounding box"

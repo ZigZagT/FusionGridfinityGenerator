@@ -34,12 +34,13 @@ def createBox(
     height: float,
     targetComponent: adsk.fusion.Component,
     targetPlane: adsk.core.Base,
+    name: str = "",
 ):
     features: adsk.fusion.Features = targetComponent.features
     extrudeFeatures: adsk.fusion.ExtrudeFeatures = features.extrudeFeatures
     sketches: adsk.fusion.Sketches = targetComponent.sketches
     recSketch: adsk.fusion.Sketch = sketches.add(targetPlane)
-    recSketch.name = "Simple box sketch"
+    recSketch.name = f"{name} sketch" if name else "Simple box sketch"
     sketchUtils.createRectangle(
         width, length, recSketch.originPoint.geometry, recSketch
     )
@@ -50,7 +51,7 @@ def createBox(
         adsk.core.ValueInput.createByReal(height),
         adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     )
-    extrude.name = "Simple box extrude"
+    extrude.name = f"{name} extrude" if name else "Simple box extrude"
     return extrude
 
 
@@ -60,6 +61,7 @@ def createBoxAtPoint(
     height: float,
     targetComponent: adsk.fusion.Component,
     originPoint: adsk.core.Point3D,
+    name: str = "",
 ):
     features: adsk.fusion.Features = targetComponent.features
     extrudeFeatures: adsk.fusion.ExtrudeFeatures = features.extrudeFeatures
@@ -71,10 +73,12 @@ def createBoxAtPoint(
         adsk.core.ValueInput.createByReal(originPoint.z),
     )
     boxConstructionPlane = targetComponent.constructionPlanes.add(boxPlaneInput)
-    boxConstructionPlane.name = "Simple box at point construction plane"
+    boxConstructionPlane.name = (
+        f"{name} plane" if name else "Simple box at point construction plane"
+    )
     sketches: adsk.fusion.Sketches = targetComponent.sketches
     recSketch: adsk.fusion.Sketch = sketches.add(boxConstructionPlane)
-    recSketch.name = "Simple box at point sketch"
+    recSketch.name = f"{name} sketch" if name else "Simple box at point sketch"
     sketchUtils.createRectangle(
         width, length, recSketch.modelToSketchSpace(originPoint), recSketch
     )
@@ -85,5 +89,5 @@ def createBoxAtPoint(
         adsk.core.ValueInput.createByReal(height),
         adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
     )
-    extrude.name = "Simple box at point extrude"
+    extrude.name = f"{name} extrude" if name else "Simple box at point extrude"
     return extrude
