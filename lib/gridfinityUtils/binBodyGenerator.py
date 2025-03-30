@@ -61,6 +61,10 @@ def createGridfinityBinBody(
 
     bodiesToMerge: list[adsk.fusion.BRepBody] = []
     bodiesToSubtract: list[adsk.fusion.BRepBody] = []
+    lipBodiesToMerge: list[adsk.fusion.BRepBody] = []
+    lipBodiesToSubtract: list[adsk.fusion.BRepBody] = []
+    compartmentLipBodiesToMerge: list[adsk.fusion.BRepBody] = []
+    compartmentLipBodiesToSubtract: list[adsk.fusion.BRepBody] = []
 
     # round corners
     filletUtils.filletEdgesByLength(
@@ -81,7 +85,9 @@ def createGridfinityBinBody(
         lipInput.xyClearance = input.xyClearance
         lipInput.binCornerFilletRadius = input.binCornerFilletRadius
         lipInput.origin = lipOriginPoint
-        lipBody = createGridfinityBinBodyLip(lipInput, targetComponent)
+        lipBodiesToMerge, lipBodiesToSubtract = createGridfinityBinBodyLip(
+            lipInput, targetComponent
+        )
 
         if input.wallThickness < const.BIN_LIP_WALL_THICKNESS:
             lipBottomChamferHeight = max(
@@ -144,12 +150,7 @@ def createGridfinityBinBody(
                 False,
             )
             chamferFeatures.add(bottomLipChamferInput)
-            combineUtils.cutBody(
-                lipBody,
-                commonUtils.objectCollectionFromList(lipBottomChamferExtrude.bodies),
-                targetComponent,
-            )
-        bodiesToMerge.append(lipBody)
+            lipBodiesToSubtract.extend(lipBottomChamferExtrude.bodies)
 
     if not input.isSolid:
         compartmentsMinX = input.wallThickness
@@ -209,7 +210,8 @@ def createGridfinityBinBody(
                 )
             else:
                 tabOriginPoint = adsk.core.Point3D.create(
-                    compartmentOriginPoint.x + compartmentWidth
+                    compartmentOriginPoint.x
+                    + compartmentWidth
                     - max(0, min(input.tabPosition, input.binWidth - input.tabLength))
                     * input.baseWidth,
                     compartmentOriginPoint.y + compartmentLength,
@@ -217,9 +219,10 @@ def createGridfinityBinBody(
                 )
 
             compartmentTabInput.origin = tabOriginPoint
-            compartmentTabInput.length = math.copysign((
-                max(0, min(abs(input.tabLength), input.binWidth)) * input.baseWidth
-            ), input.tabLength)
+            compartmentTabInput.length = math.copysign(
+                (max(0, min(abs(input.tabLength), input.binWidth)) * input.baseWidth),
+                input.tabLength,
+            )
             compartmentTabInput.width = input.tabWidth
             compartmentTabInput.overhangAngle = input.tabOverhangAngle
             compartmentTabInput.topClearance = const.BIN_TAB_TOP_CLEARANCE
@@ -241,7 +244,30 @@ def createGridfinityBinBody(
             bodiesToSubtract = bodiesToSubtract + compartmentCuts
             bodiesToMerge = bodiesToMerge + compartmentMerges
 
-        if len(input.compartments) > 1:
+            if input.hasCompartmentsLip:
+                compartmentLipX = compartmentX - input.wallThickness
+                compartmentLipY = compartmentY - input.wallThickness
+                compartmentLipOriginPoint = adsk.core.Point3D.create(
+                    compartmentLipX, compartmentLipY, binBodyTotalHeight
+                )
+                compartmentLipWidth = compartmentWidth + input.wallThickness * 2
+                compartmentLipLength = compartmentLength + input.wallThickness * 2
+                lipBodies = createCompartmentLip(
+                    input.wallThickness,
+                    compartmentLipOriginPoint,
+                    compartmentLipWidth,
+                    compartmentLipLength,
+                    input.binCornerFilletRadius,
+                    input.hasScoop,
+                    targetComponent,
+                    input.baseWidth,
+                    input.baseLength,
+                    input.hasLipNotches,
+                )
+                compartmentLipBodiesToMerge.extend(lipBodies[0])
+                compartmentLipBodiesToSubtract.extend(lipBodies[1])
+
+        if len(input.compartments) > 1 and not input.hasCompartmentsLip:
             compartmentsTopClearance = createCompartmentCutout(
                 input.wallThickness,
                 adsk.core.Point3D.create(
@@ -316,6 +342,38 @@ def createGridfinityBinBody(
         combineUtils.joinBodies(
             binBody,
             commonUtils.objectCollectionFromList(bodiesToMerge),
+            targetComponent,
+        )
+
+    if len(lipBodiesToMerge) > 0:
+        combineUtils.joinBodies(
+            binBody,
+            commonUtils.objectCollectionFromList(lipBodiesToMerge),
+            targetComponent,
+        )
+
+    if len(lipBodiesToSubtract) > 0:
+        if input.hasCompartmentsLip:
+            for body in lipBodiesToSubtract:
+                targetComponent.features.removeFeatures.add(body)
+        else:
+            combineUtils.cutBody(
+                binBody,
+                commonUtils.objectCollectionFromList(lipBodiesToSubtract),
+                targetComponent,
+            )
+
+    if len(compartmentLipBodiesToMerge) > 0:
+        combineUtils.joinBodies(
+            binBody,
+            commonUtils.objectCollectionFromList(compartmentLipBodiesToMerge),
+            targetComponent,
+        )
+
+    if len(compartmentLipBodiesToSubtract) > 0:
+        combineUtils.cutBody(
+            binBody,
+            commonUtils.objectCollectionFromList(compartmentLipBodiesToSubtract),
             targetComponent,
         )
 
@@ -400,4 +458,92 @@ def createCompartment(
             for body in list(intersectTabFeature.bodies)
             if not body.revisionId == innerCutoutBody.revisionId
         ]
+
     return (bodiesToMerge, bodiesToSubtract)
+
+
+def createCompartmentLip(
+    wallThickness: float,
+    originPoint: adsk.core.Point3D,
+    width: float,
+    length: float,
+    cornerFilletRadius: float,
+    hasScoop: bool,
+    targetComponent: adsk.fusion.Component,
+    baseWidth: float = 0,
+    baseLength: float = 0,
+    hasLipNotches: bool = False,
+):
+    lipInput = BinBodyLipGeneratorInput()
+    lipInput.baseLength = baseLength
+    lipInput.baseWidth = baseWidth
+    lipInput.binLength = length / baseLength
+    lipInput.binWidth = width / baseWidth
+    lipInput.hasLipNotches = hasLipNotches
+    lipInput.xyClearance = 0
+    lipInput.binCornerFilletRadius = cornerFilletRadius
+    lipInput.origin = originPoint
+    lipBodiesToMerge, lipBodiesToSubtract = createGridfinityBinBodyLip(
+        lipInput, targetComponent
+    )
+
+    if wallThickness < const.BIN_LIP_WALL_THICKNESS:
+        lipBottomChamferHeight = max(
+            const.BIN_BODY_CUTOUT_BOTTOM_FILLET_RADIUS,
+            cornerFilletRadius - wallThickness,
+        )
+        lipBottomChamferSize = wallThickness
+        lipBottomChamferExtrude = extrudeUtils.createBoxAtPoint(
+            width - wallThickness * 2,
+            (
+                (length - wallThickness - const.BIN_LIP_WALL_THICKNESS)
+                if hasScoop
+                else (length - wallThickness * 2)
+            ),
+            lipBottomChamferHeight,
+            targetComponent,
+            adsk.core.Point3D.create(
+                originPoint.x + wallThickness,
+                originPoint.y + const.BIN_LIP_WALL_THICKNESS
+                if hasScoop
+                else originPoint.y + wallThickness,
+                originPoint.z,
+            ),
+            "Lip bottom chamfer",
+        )
+        filletUtils.filletEdgesByLength(
+            lipBottomChamferExtrude.faces,
+            lipBottomChamferHeight,
+            lipBottomChamferHeight,
+            targetComponent,
+        )
+        lipBottomChamferExtrudeTopFace = faceUtils.getTopFace(
+            lipBottomChamferExtrude.bodies.item(0)
+        )
+        scoopSideEdge = min(
+            [
+                edge
+                for edge in lipBottomChamferExtrudeTopFace.edges
+                if geometryUtils.isCollinearToX(edge)
+            ],
+            key=lambda x: x.boundingBox.minPoint.y,
+        )
+
+        edgesToChamfer = (
+            list(scoopSideEdge.tangentiallyConnectedEdges)[3:]
+            if hasScoop
+            else scoopSideEdge.tangentiallyConnectedEdges
+        )
+        chamferFeatures: adsk.fusion.ChamferFeatures = (
+            targetComponent.features.chamferFeatures
+        )
+        bottomLipChamferInput = chamferFeatures.createInput2()
+        bottomLipChamferEdges = commonUtils.objectCollectionFromList(edgesToChamfer)
+        bottomLipChamferInput.chamferEdgeSets.addEqualDistanceChamferEdgeSet(
+            bottomLipChamferEdges,
+            adsk.core.ValueInput.createByReal(lipBottomChamferSize),
+            False,
+        )
+        chamferFeatures.add(bottomLipChamferInput)
+        lipBodiesToSubtract.extend(lipBottomChamferExtrude.bodies)
+    return lipBodiesToMerge, lipBodiesToSubtract

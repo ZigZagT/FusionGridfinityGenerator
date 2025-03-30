@@ -166,7 +166,9 @@ def createGridfinityBinBodyLip(
             actualLipBodyWidth,
             actualLipBodyLength,
             topChamferSketch.modelToSketchSpace(
-                adsk.core.Point3D.create(0, 0, topChamferSketch.origin.z)
+                adsk.core.Point3D.create(
+                    input.origin.x, input.origin.y, topChamferSketch.origin.z
+                )
             ),
             topChamferSketch,
         )
@@ -182,8 +184,4 @@ def createGridfinityBinBodyLip(
         bodiesToSubtract.append(topChamferNegativeVolume.bodies.item(0))
     bodiesToSubtract = bodiesToSubtract + lipCutoutBodies
 
-    combineUtils.cutBody(
-        lipBody, commonUtils.objectCollectionFromList(bodiesToSubtract), targetComponent
-    )
-
-    return lipBody
+    return [lipBody], bodiesToSubtract

@@ -113,6 +113,7 @@ BIN_TAB_POSITION_INPUT_ID = "bin_tab_position"
 BIN_TAB_ANGLE_INPUT_ID = "bin_tab_angle"
 BIN_WITH_LIP_INPUT_ID = "with_lip"
 BIN_WITH_LIP_NOTCHES_INPUT_ID = "with_lip_notches"
+BIN_COMPARTMENTS_LIP_INPUT_ID = "compartments_lip"
 BIN_COMPARTMENT_REAL_DIMENSIONS_TABLE = "compartment_real_dimensions"
 BIN_COMPARTMENT_REAL_DIMENSIONS_WIDTH = "compartment_width_u"
 BIN_COMPARTMENT_REAL_DIMENSIONS_LENGTH = "compartment_length_u"
@@ -260,6 +261,12 @@ def initDefaultUiState():
         BIN_COMPARTMENTS_GRID_TYPE_ID,
         BIN_COMPARTMENTS_GRID_TYPE_UNIFORM,
         adsk.core.DropDownCommandInput.classType(),
+    )
+
+    commandUIState.initValue(
+        BIN_COMPARTMENTS_LIP_INPUT_ID,
+        False,
+        adsk.core.BoolValueCommandInput.classType(),
     )
 
     commandUIState.initValue(
@@ -1086,6 +1093,15 @@ def command_created(args: adsk.core.CommandCreatedEventArgs):
     commandUIState.registerCommandInput(compartmentGridDropdown)
     render_compartments_table(inputs)
 
+    compartmentsLipInput = compartmentsGroup.children.addBoolValueInput(
+        BIN_COMPARTMENTS_LIP_INPUT_ID,
+        "Generate lip for each compartment",
+        True,
+        "",
+        commandUIState.getState(BIN_COMPARTMENTS_LIP_INPUT_ID),
+    )
+    commandUIState.registerCommandInput(compartmentsLipInput)
+
     binScoopGroup = compartmentsGroup.children.addGroupCommandInput(
         BIN_SCOOP_GROUP_ID, "Scoop"
     )
@@ -1516,6 +1532,8 @@ def onChangeValidate():
         compartmentsGridType == BIN_COMPARTMENTS_GRID_TYPE_CUSTOM
     )
 
+    commandUIState.getInput(BIN_COMPARTMENTS_LIP_INPUT_ID).isEnabled = generateLip
+
     showPreview: bool = commandUIState.getInput(SHOW_PREVIEW_INPUT).value
     commandUIState.getInput(SHOW_PREVIEW_MANUAL_INPUT).isVisible = not showPreview
 
@@ -1610,6 +1628,10 @@ def generateBin(args: adsk.core.CommandEventArgs):
         BIN_COMPARTMENTS_GRID_BASE_LENGTH_ID
     )
 
+    compartments_lip: adsk.core.BoolValueCommandInput = inputs.itemById(
+        BIN_COMPARTMENTS_LIP_INPUT_ID
+    )
+
     isHollow = binTypeDropdownInput.selectedItem.name == BIN_TYPE_HOLLOW
     isSolid = binTypeDropdownInput.selectedItem.name == BIN_TYPE_SOLID
     isShelled = binTypeDropdownInput.selectedItem.name == BIN_TYPE_SHELLED
@@ -1690,6 +1712,7 @@ def generateBin(args: adsk.core.CommandEventArgs):
         binBodyInput.tabOverhangAngle = binTabAngle.value
         binBodyInput.compartmentsByX = compartmentsX.value
         binBodyInput.compartmentsByY = compartmentsY.value
+        binBodyInput.hasCompartmentsLip = compartments_lip.value and with_lip.value
 
         if (
             binCompartmentGridTypeDropdownInput.selectedItem.name

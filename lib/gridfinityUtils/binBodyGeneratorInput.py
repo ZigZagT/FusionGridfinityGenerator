@@ -73,6 +73,7 @@ class BinBodyGeneratorInput:
         self.compartmentsByX = 1
         self.compartmentsByY = 1
         self.binCornerFilletRadius = const.BIN_CORNER_FILLET_RADIUS
+        self.hasCompartmentsLip = False
 
     @property
     def baseWidth(self) -> float:
